@@ -53,11 +53,6 @@ void loop() {
 }
 ```
 
-        }
-    }
-}
-```
-
 ## Advanced Usage
 
 ### Accessing Raw Data

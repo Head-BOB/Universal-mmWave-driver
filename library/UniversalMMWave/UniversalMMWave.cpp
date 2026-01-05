@@ -1,14 +1,14 @@
 #include "UniversalMMWave.h"
 
-// Sensor Frame Signatures
+// Protocol signatures for corruption detection
 static const char* SIG_STD = "DFDMD"; 
-static const char SIG_V25[] = {0x24, 0x04, 0x06, 0x04, 0x4D, 0x04, 0x00}; // Arduino V25 Signature
-static const char SIG_V31[] = {0x44, 0x04, 0x06, 0x04, 0x0D, 0x04, 0x00}; // ESP32 V31 Signature
+static const char SIG_V25[] = {0x24, 0x04, 0x06, 0x04, 0x4D, 0x04, 0x00}; // Arduino V25 Mode
+static const char SIG_V31[] = {0x44, 0x04, 0x06, 0x04, 0x0D, 0x04, 0x00}; // ESP32 V31 Mode
 
 UniversalMMWave::UniversalMMWave(int rxPin, int txPin) 
     : _rx(rxPin), _tx(txPin), _bufIdx(0), _correctionMode(0), _lastRxTime(0) {
     
-    // Initialize default target state
+    // Reset target telemetry
     _currentTarget.id = 0;
     _currentTarget.distance = 0.0f;
     _currentTarget.speed = 0.0f;
@@ -20,7 +20,7 @@ UniversalMMWave::UniversalMMWave(int rxPin, int txPin)
 long UniversalMMWave::detectBaudRate() {
     pinMode(_rx, INPUT);
     
-    // Sample pulse widths to determine bit timing
+    // Pulse width measurement for baud rate estimation
     unsigned long minPulse = 100000;
     unsigned long startTime = millis();
     
@@ -32,9 +32,9 @@ long UniversalMMWave::detectBaudRate() {
         }
     }
     
-    // Timing Analysis:
-    // ~96us  -> 10416 Baud (Standard Sensor Rate)
-    // ~104us -> 9600 Baud  (Fallback/Alternative)
+    // Pulse width thresholds:
+    // 90-100us: 10416 baud (Native)
+    // 100-110us: 9600 baud (Standard)
     
     if (minPulse > 90 && minPulse < 100) return 10416;
     if (minPulse >= 100 && minPulse < 110) return 9600;
@@ -75,7 +75,7 @@ bool UniversalMMWave::update() {
     while (_serial->available()) {
         char c = _serial->read();
         
-        // Safety Mask: Clear MSB to prevent ASCII extended char issues
+        // Mask MSB to ensure standard ASCII range
         c = c & 0x7F;
         
         if (_bufIdx < MM_FRAME_BUFFER_SIZE - 1) {
@@ -102,8 +102,7 @@ bool UniversalMMWave::update() {
 }
 
 void UniversalMMWave::applyPayloadCorrection(char* str) {
-    // V31 Correction: Inverted Bit 6 on specific bytes
-    // Applies mainly to numeric characters '0' (0x30) -> 'p' (0x70)
+    // V31: Invert Bit 6 to restore numeric range (0x30 <-> 0x70)
     while (*str) {
         if (*str >= 0x60) *str = *str ^ 0x40; 
         if (*str == 0x4C) *str = ',';         
