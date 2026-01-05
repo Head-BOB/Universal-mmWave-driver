@@ -53,6 +53,25 @@ void loop() {
 }
 ```
 
+        }
+    }
+}
+```
+
+## Advanced Usage
+
+### Accessing Raw Data
+For applications requiring custom parsing logic, the driver provides access to the raw, error-corrected data frame.
+
+```cpp
+if (sensor.update()) {
+    // Access the raw string (e.g., "$DFDMD,1,2.5,0.4,120")
+    // Note: This data has already been corrected for hardware bit-errors.
+    const char* raw = sensor.getRawData();
+    Serial.println(raw);
+}
+```
+
 ## Hardware Connection
 
 | Sensor Pin | ESP32 Pin | Logic Level | Notes |

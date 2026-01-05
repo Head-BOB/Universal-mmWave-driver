@@ -86,8 +86,14 @@ bool UniversalMMWave::update() {
     
     // Frame Timeout: Process buffer if idle for >10ms
     if (_bufIdx > 0 && (millis() - _lastRxTime > 10)) {
-        _recvBuf[_bufIdx] = 0; // Null Check
-        parseFrame(_recvBuf);
+        _recvBuf[_bufIdx] = 0; // Null Terminate
+        
+        // Parse Frame (Corrects bit-errors in place)
+        parseFrame(_recvBuf); 
+        
+        // Persist corrected frame for external access
+        strcpy(_lastFrame, _recvBuf); 
+        
         dataParsed = true;
         _bufIdx = 0; // Reset Buffer
     }
@@ -180,6 +186,7 @@ void UniversalMMWave::updateTargetState(int id, float d, float s, float e) {
 // Accessors
 bool UniversalMMWave::hasTarget() { return _currentTarget.id != 0; }
 MMWaveTarget UniversalMMWave::getTarget() { return _currentTarget; }
+const char* UniversalMMWave::getRawData() { return _lastFrame; }
 long UniversalMMWave::getDetectedBaud() { return _baudRate; }
 const char* UniversalMMWave::getCorrectionMode() {
     switch(_correctionMode) {

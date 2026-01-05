@@ -50,12 +50,18 @@ public:
      */
     const char* getCorrectionMode();
 
+    /**
+     * @brief Returns the raw (error-corrected) data string for custom parsing.
+     */
+    const char* getRawData();
+
 private:
     int _rx, _tx;
     HardwareSerial* _serial; 
     long _baudRate;
     
     char _recvBuf[MM_FRAME_BUFFER_SIZE];
+    char _lastFrame[MM_FRAME_BUFFER_SIZE]; // Persist last frame
     int _bufIdx;
     unsigned long _lastRxTime;
     
